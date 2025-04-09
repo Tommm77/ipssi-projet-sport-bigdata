@@ -10,7 +10,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS sports (
   nombre_joueurs INT,
   description STRING
 )
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.JsonSerDe'
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/sports';
 
@@ -28,7 +28,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS matchs (
   statut STRING,
   derniere_mise_a_jour STRING
 )
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.JsonSerDe'
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/matchs';
 
@@ -42,7 +42,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS users (
   sports_favoris ARRAY<INT>,
   notification_active BOOLEAN
 )
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.JsonSerDe'
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/users';
 
@@ -56,6 +56,6 @@ CREATE EXTERNAL TABLE IF NOT EXISTS notifications (
   date_envoi STRING,
   statut STRING
 )
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.JsonSerDe'
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/notifications'; 
