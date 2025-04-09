@@ -50,4 +50,8 @@ RUN pip install --no-cache-dir \
     "impyla==0.18.0" \
     "thrift-sasl<0.5.0,>0.4.0"
 
-RUN pip uninstall -y sasl pyhive thrift
+# Installer les packages dont nous avons besoin
+RUN pip install --no-cache-dir \
+    "confluent-kafka==2.3.0" \
+    "pyhive[hive]==0.6.5" \
+    "thrift==0.16.0"
