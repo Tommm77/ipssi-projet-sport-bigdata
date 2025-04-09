@@ -1,0 +1,15 @@
+FROM bde2020/hive:2.3.2-postgresql-metastore
+
+WORKDIR /opt
+
+# Pas besoin d'installer netcat, utilisons d'autres commandes pour vérifier la disponibilité des services
+
+# Copier les scripts d'initialisation
+COPY init-hive.sql /opt/init-hive.sql
+COPY init-script.sh /opt/init-script.sh
+
+# Rendre le script exécutable
+RUN chmod +x /opt/init-script.sh
+
+# Commande à exécuter lors du démarrage du conteneur
+CMD ["/bin/bash", "/opt/init-script.sh"] 

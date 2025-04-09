@@ -1,0 +1,4 @@
+kafka-python==2.0.2
+hdfs==2.7.0
+requests==2.28.1
+six==1.16.0 

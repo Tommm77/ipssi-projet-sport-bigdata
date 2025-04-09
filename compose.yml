@@ -251,6 +251,32 @@ services:
       - hive-server
       - airflow
 
+  hive-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.hive-init
+    depends_on:
+      - namenode
+      - datanode
+      - hive-metastore
+      - hive-server
+    restart: on-failure
+    networks:
+      - default
+
+  kafka-to-hive:
+    build:
+      context: .
+      dockerfile: Dockerfile.hive-connector
+    depends_on:
+      - kafka
+      - namenode
+      - hive-server
+      - hive-init
+    restart: always
+    networks:
+      - default
+
 volumes:
   namenode:
   datanode:
