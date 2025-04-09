@@ -8,11 +8,11 @@ apache-airflow-providers-apache-spark==3.1.0
 
 # Kafka (solution alternative sans SASL)
 kafka-python==2.0.2
-confluent-kafka==1.9.2
+confluent-kafka==2.3.0
 
 # Hive/Hadoop (version pure Python)
 pyhive[hive]==0.6.5 --no-binary=pyhive
-thrift==0.15.0
+thrift==0.16.0
 thrift-sasl==0.4.3 --no-binary=thrift-sasl
 
 # NiFi
@@ -30,3 +30,8 @@ libsasl2-dev==2.1.27
 confluent-kafka
 pyhive
 thrift
+
+# Assurez-vous que ces packages sont installés
+confluent-kafka==2.3.0
+pyhive[hive]==0.6.5
+thrift==0.16.0
