@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Typography,
   Box,
@@ -15,20 +15,20 @@ import {
   Grid,
   FormControl,
   InputLabel,
-  Select
-} from '@mui/material';
+  Select,
+} from "@mui/material";
 
 // Importer le service API
-import { getMatchs } from '../services/api';
+import { getMatchs } from "../services/api";
 
 const MatchsPage = () => {
   const [loading, setLoading] = useState(true);
   const [matchs, setMatchs] = useState([]);
   const [filteredMatchs, setFilteredMatchs] = useState([]);
-  
+
   // Filtres
-  const [sportFilter, setSportFilter] = useState('');
-  const [statutFilter, setStatutFilter] = useState('');
+  const [sportFilter, setSportFilter] = useState("");
+  const [statutFilter, setStatutFilter] = useState("");
 
   useEffect(() => {
     const fetchMatchs = async () => {
@@ -50,43 +50,66 @@ const MatchsPage = () => {
   // Filtrer les matchs quand les filtres changent
   useEffect(() => {
     let result = [...matchs];
-    
+
     if (sportFilter) {
-      result = result.filter(match => match.sport_nom === sportFilter);
+      result = result.filter((match) => match.sport_nom === sportFilter);
     }
-    
+
     if (statutFilter) {
-      result = result.filter(match => match.statut === statutFilter);
+      result = result.filter((match) => match.statut === statutFilter);
     }
-    
+
     setFilteredMatchs(result);
   }, [matchs, sportFilter, statutFilter]);
 
+  const statusLabels = {
+    SCHEDULED: "prévu",
+    TIMED: "programmé",
+    IN_PLAY: "en cours",
+    PAUSED: "en pause",
+    FINISHED: "terminé",
+    LIVE: "en cours",
+  };
+
   const getStatutColor = (statut) => {
     switch (statut.toLowerCase()) {
-      case 'programmé':
-        return 'primary';
-      case 'en cours':
-        return 'success';
-      case 'terminé':
-        return 'default';
+      case "programmé":
+      case "prévu":
+      case "timed":
+      case "scheduled":
+        return "primary";
+      case "en cours":
+      case "in_play":
+      case "live":
+      case "en pause":
+      case "paused":
+        return "success";
+      case "terminé":
+      case "finished":
+        return "default";
+      case "reporté":
+      case "postponed":
+        return "warning";
+      case "annulé":
+      case "cancelled":
+        return "error";
       default:
-        return 'default';
+        return "default";
     }
   };
-  
+
   // Extraire les sports uniques pour le filtre
-  const uniqueSports = [...new Set(matchs.map(match => match.sport_nom))];
-  
+  const uniqueSports = [...new Set(matchs.map((match) => match.sport_nom))];
+
   // Extraire les statuts uniques pour le filtre
-  const uniqueStatuts = [...new Set(matchs.map(match => match.statut))];
+  const uniqueStatuts = [...new Set(matchs.map((match) => match.statut))];
 
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
         Matchs
       </Typography>
-      
+
       {/* Filtres */}
       <Box mb={3}>
         <Grid container spacing={2}>
@@ -99,13 +122,15 @@ const MatchsPage = () => {
                 onChange={(e) => setSportFilter(e.target.value)}
               >
                 <MenuItem value="">Tous les sports</MenuItem>
-                {uniqueSports.map(sport => (
-                  <MenuItem key={sport} value={sport}>{sport}</MenuItem>
+                {uniqueSports.map((sport) => (
+                  <MenuItem key={sport} value={sport}>
+                    {sport}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth>
               <InputLabel>Statut</InputLabel>
@@ -115,15 +140,17 @@ const MatchsPage = () => {
                 onChange={(e) => setStatutFilter(e.target.value)}
               >
                 <MenuItem value="">Tous les statuts</MenuItem>
-                {uniqueStatuts.map(statut => (
-                  <MenuItem key={statut} value={statut}>{statut}</MenuItem>
+                {uniqueStatuts.map((statut) => (
+                  <MenuItem key={statut} value={statut}>
+                    {statut}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </Grid>
         </Grid>
       </Box>
-      
+
       {loading ? (
         <Typography>Chargement des matchs...</Typography>
       ) : (
@@ -156,10 +183,10 @@ const MatchsPage = () => {
                   </TableCell>
                   <TableCell>{match.lieu}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={match.statut} 
-                      color={getStatutColor(match.statut)} 
-                      size="small" 
+                    <Chip
+                      label={match.statut}
+                      color={getStatutColor(match.statut)}
+                      size="small"
                     />
                   </TableCell>
                 </TableRow>
@@ -172,4 +199,4 @@ const MatchsPage = () => {
   );
 };
 
-export default MatchsPage; 
+export default MatchsPage;
