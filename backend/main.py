@@ -30,10 +30,11 @@ app = FastAPI(
 # Configuration CORS pour permettre au frontend de communiquer
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Dans un environnement de production, spécifiez les domaines autorisés
+    allow_origins=["http://localhost:3000"],  # Spécifier explicitement l'origine du frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Modèles de données
@@ -50,8 +51,8 @@ class Match(BaseModel):
     sport_nom: str
     equipe_domicile: str
     equipe_exterieur: str
-    score_domicile: int
-    score_exterieur: int
+    score_domicile: Optional[int] = 0
+    score_exterieur: Optional[int] = 0
     date_match: str
     lieu: str
     statut: str
@@ -282,6 +283,12 @@ async def consume_matchs():
                 
                 # Vérifier si c'est une mise à jour partielle ou un nouveau match complet
                 is_update = "sport_id" not in match_data or "sport_nom" not in match_data
+                
+                # S'assurer que les scores sont toujours présents
+                if "score_domicile" not in match_data:
+                    match_data["score_domicile"] = 0
+                if "score_exterieur" not in match_data:
+                    match_data["score_exterieur"] = 0
                 
                 if is_update:
                     # C'est une mise à jour partielle
@@ -576,6 +583,14 @@ async def get_matchs(
     # Filtrer les matchs selon les critères
     matchs = matchs_data
     
+    # S'assurer que chaque match a tous les champs requis
+    for match in matchs:
+        # Ajouter les champs manquants avec des valeurs par défaut
+        if "score_domicile" not in match:
+            match["score_domicile"] = 0
+        if "score_exterieur" not in match:
+            match["score_exterieur"] = 0
+    
     if sport_id:
         matchs = [m for m in matchs if m["sport_id"] == sport_id]
     if statut:
@@ -597,6 +612,13 @@ async def get_match(match_id: int):
     match = next((m for m in matchs_data if m["match_id"] == match_id), None)
     if match is None:
         raise HTTPException(status_code=404, detail="Match non trouvé")
+    
+    # S'assurer que le match a tous les champs requis
+    if "score_domicile" not in match:
+        match["score_domicile"] = 0
+    if "score_exterieur" not in match:
+        match["score_exterieur"] = 0
+    
     return match
 
 # Créer un nouveau match et l'envoyer à Kafka
