@@ -22,6 +22,7 @@ def main():
     spark = SparkSession.builder \
         .appName("Notifications Producer") \
         .config("spark.streaming.stopGracefullyOnShutdown", "true") \
+        .master("local[*]") \
         .getOrCreate()
     
     # Définir le niveau de log pour réduire le bruit

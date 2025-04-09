@@ -8,48 +8,26 @@ import time
 import json
 import random
 from datetime import datetime, timedelta
+import requests
+import os
 
 # Configurations
 KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
 MATCHS_TOPIC = 'matchs_topic'
+FOOTBALL_API_KEY = os.environ.get('FOOTBALL_API_KEY', '')  # Clé API à définir dans les variables d'environnement
+FOOTBALL_API_URL = 'https://api.football-data.org/v4/matches'
 
 def main():
     # Initialiser une session Spark
     spark = SparkSession.builder \
         .appName("Matchs Producer") \
+        .master("local[*]") \
         .getOrCreate()
     
     # Définir le niveau de log pour réduire le bruit
     spark.sparkContext.setLogLevel("WARN")
     
     print("=== Démarrage du producteur de matchs avec Spark ===")
-    
-    # Définition des sports
-    sports_data = [
-        {"sport_id": 1, "nom": "Football"},
-        {"sport_id": 2, "nom": "Basketball"},
-        {"sport_id": 3, "nom": "Tennis"},
-        {"sport_id": 4, "nom": "Rugby"},
-        {"sport_id": 5, "nom": "Volleyball"}
-    ]
-    
-    # Équipes par sport
-    equipes = {
-        1: ["PSG", "Marseille", "Lyon", "Monaco", "Lille", "Rennes"],
-        2: ["ASVEL", "Paris Basket", "Monaco", "Nanterre", "Dijon", "Strasbourg"],
-        3: ["Joueur1", "Joueur2", "Joueur3", "Joueur4", "Joueur5", "Joueur6"],
-        4: ["Toulouse", "La Rochelle", "Bordeaux", "Toulon", "Racing 92", "Clermont"],
-        5: ["Paris", "Tours", "Montpellier", "Nantes", "Toulouse", "Cannes"]
-    }
-    
-    # Lieux par sport
-    lieux = {
-        1: ["Parc des Princes", "Vélodrome", "Groupama Stadium", "Louis II", "Pierre Mauroy"],
-        2: ["Astroballe", "Accor Arena", "Salle Gaston Médecin", "Palais des Sports"],
-        3: ["Roland Garros", "Accor Arena", "Court Suzanne-Lenglen", "Court Philippe-Chatrier"],
-        4: ["Stade Ernest-Wallon", "Stade Marcel Deflandre", "Stade Chaban-Delmas"],
-        5: ["Salle Pierre Coubertin", "Palais des Sports de Tours", "Palais des Sports de Gerland"]
-    }
     
     # Schéma pour les matchs
     match_schema = StructType([
@@ -74,41 +52,88 @@ def main():
         StructField("derniere_mise_a_jour", StringType(), True)
     ])
     
-    # Fonction pour générer un match
-    def generer_match(match_id):
-        sport = random.choice(sports_data)
-        sport_id = sport["sport_id"]
+    # Fonction pour récupérer les matchs depuis l'API
+    def recuperer_matchs_api():
+        headers = {
+            'X-Auth-Token': FOOTBALL_API_KEY
+        }
         
-        equipes_sport = equipes[sport_id]
-        equipe_domicile = random.choice(equipes_sport)
-        equipe_exterieur = random.choice([e for e in equipes_sport if e != equipe_domicile])
+        # Récupérer les matchs des 7 prochains jours
+        date_debut = datetime.now().strftime("%Y-%m-%d")
+        date_fin = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
         
-        debut_match = datetime.now() + timedelta(days=random.randint(0, 14), hours=random.randint(0, 23))
+        params = {
+            'dateFrom': date_debut,
+            'dateTo': date_fin
+        }
+        
+        try:
+            response = requests.get(FOOTBALL_API_URL, headers=headers, params=params)
+            response.raise_for_status()  # Lève une exception en cas d'erreur HTTP
+            
+            data = response.json()
+            return data.get('matches', [])
+        except Exception as e:
+            print(f"Erreur lors de la récupération des matchs: {str(e)}")
+            return []
+    
+    # Fonction pour convertir un match de l'API au format attendu
+    def convertir_match_api(match_api, match_id):
+        # Déterminer le statut du match
+        statut_map = {
+            'SCHEDULED': 'programmé',
+            'LIVE': 'en cours',
+            'FINISHED': 'terminé',
+            'POSTPONED': 'reporté',
+            'CANCELLED': 'annulé'
+        }
+        
+        # Extraire les scores
+        score_domicile = match_api.get('score', {}).get('fullTime', {}).get('home', 0)
+        score_exterieur = match_api.get('score', {}).get('fullTime', {}).get('away', 0)
+        
+        # Convertir la date
+        date_match = match_api.get('utcDate', '')
+        if date_match:
+            try:
+                date_obj = datetime.strptime(date_match, "%Y-%m-%dT%H:%M:%SZ")
+                date_match = date_obj.strftime("%Y-%m-%d %H:%M:%S")
+            except:
+                pass
         
         match = {
             "match_id": match_id,
-            "sport_id": sport_id,
-            "sport_nom": sport["nom"],
-            "equipe_domicile": equipe_domicile,
-            "equipe_exterieur": equipe_exterieur,
-            "score_domicile": 0,
-            "score_exterieur": 0,
-            "date_match": debut_match.strftime("%Y-%m-%d %H:%M:%S"),
-            "lieu": random.choice(lieux[sport_id]),
-            "statut": "programmé"
+            "sport_id": 1,  # Football
+            "sport_nom": "Football",
+            "equipe_domicile": match_api.get('homeTeam', {}).get('name', ''),
+            "equipe_exterieur": match_api.get('awayTeam', {}).get('name', ''),
+            "score_domicile": score_domicile,
+            "score_exterieur": score_exterieur,
+            "date_match": date_match,
+            "lieu": match_api.get('venue', ''),
+            "statut": statut_map.get(match_api.get('status', ''), 'programmé')
         }
         
         return match
     
     # Fonction pour générer une mise à jour de match
-    def generer_mise_a_jour_match(match_id):
-        statut = random.choice(["en cours", "terminé"])
+    def generer_mise_a_jour_match(match_id, match_api):
+        statut_map = {
+            'SCHEDULED': 'programmé',
+            'LIVE': 'en cours',
+            'FINISHED': 'terminé',
+            'POSTPONED': 'reporté',
+            'CANCELLED': 'annulé'
+        }
+        
+        score_domicile = match_api.get('score', {}).get('fullTime', {}).get('home', 0)
+        score_exterieur = match_api.get('score', {}).get('fullTime', {}).get('away', 0)
         
         match_update = {
             "match_id": match_id,
-            "statut": statut,
-            "score_domicile": random.randint(0, 5),
-            "score_exterieur": random.randint(0, 5),
+            "statut": statut_map.get(match_api.get('status', ''), 'programmé'),
+            "score_domicile": score_domicile,
+            "score_exterieur": score_exterieur,
             "derniere_mise_a_jour": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
@@ -116,43 +141,67 @@ def main():
     
     try:
         match_id = 1000
+        matchs_existants = {}  # Pour stocker les matchs déjà traités
         
         # Boucle principale
         for _ in range(50):  # Limiter à 50 itérations pour éviter une boucle infinie
             match_id += 1
             
-            # Générer un nouveau match
-            match = generer_match(match_id)
-            match_df = spark.createDataFrame([match], match_schema)
+            # Récupérer les matchs depuis l'API
+            matchs_api = recuperer_matchs_api()
             
-            # Envoyer le match au topic Kafka
-            match_df.selectExpr("to_json(struct(*)) AS value") \
-                .write \
-                .format("kafka") \
-                .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
-                .option("topic", MATCHS_TOPIC) \
-                .save()
+            if not matchs_api:
+                print("Aucun match trouvé dans l'API")
+                time.sleep(60)  # Attendre 1 minute avant de réessayer
+                continue
             
-            print(f"Match envoyé: ID={match['match_id']}, {match['equipe_domicile']} vs {match['equipe_exterieur']}")
-            
-            # Simuler des mises à jour de matchs existants
-            if random.random() > 0.7 and match_id > 1010:
-                update_match_id = random.randint(1001, match_id-1)
-                match_update = generer_mise_a_jour_match(update_match_id)
+            # Traiter chaque match de l'API
+            for match_api in matchs_api:
+                api_match_id = match_api.get('id')
                 
-                update_df = spark.createDataFrame([match_update], update_schema)
-                
-                # Envoyer la mise à jour au topic Kafka
-                update_df.selectExpr("to_json(struct(*)) AS value") \
-                    .write \
-                    .format("kafka") \
-                    .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
-                    .option("topic", MATCHS_TOPIC) \
-                    .save()
-                
-                print(f"Mise à jour envoyée pour le match {update_match_id}: statut={match_update['statut']}, score={match_update['score_domicile']}-{match_update['score_exterieur']}")
+                # Si c'est un nouveau match
+                if api_match_id not in matchs_existants:
+                    match = convertir_match_api(match_api, match_id)
+                    match_df = spark.createDataFrame([match], match_schema)
+                    
+                    # Envoyer le match au topic Kafka
+                    match_df.selectExpr("to_json(struct(*)) AS value") \
+                        .write \
+                        .format("kafka") \
+                        .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
+                        .option("topic", MATCHS_TOPIC) \
+                        .save()
+                    
+                    print(f"Match envoyé: ID={match['match_id']}, {match['equipe_domicile']} vs {match['equipe_exterieur']}")
+                    
+                    # Stocker le match pour les mises à jour futures
+                    matchs_existants[api_match_id] = {
+                        'match_id': match_id,
+                        'match_api': match_api
+                    }
+                    
+                    match_id += 1
+                else:
+                    # Mise à jour d'un match existant
+                    match_info = matchs_existants[api_match_id]
+                    match_update = generer_mise_a_jour_match(match_info['match_id'], match_api)
+                    
+                    update_df = spark.createDataFrame([match_update], update_schema)
+                    
+                    # Envoyer la mise à jour au topic Kafka
+                    update_df.selectExpr("to_json(struct(*)) AS value") \
+                        .write \
+                        .format("kafka") \
+                        .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
+                        .option("topic", MATCHS_TOPIC) \
+                        .save()
+                    
+                    print(f"Mise à jour envoyée pour le match {match_update['match_id']}: statut={match_update['statut']}, score={match_update['score_domicile']}-{match_update['score_exterieur']}")
+                    
+                    # Mettre à jour les informations du match
+                    matchs_existants[api_match_id]['match_api'] = match_api
             
-            time.sleep(15)  # Attendre 15 secondes entre chaque envoi
+            time.sleep(300)  # Attendre 5 minutes entre chaque requête API
         
         print("=== Producteur de matchs terminé ===")
     
@@ -164,4 +213,4 @@ def main():
         print("=== Session Spark arrêtée ===")
 
 if __name__ == "__main__":
-    main() 
+    main()

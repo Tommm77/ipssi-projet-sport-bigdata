@@ -139,21 +139,27 @@ services:
       /spark/bin/spark-submit --master spark://spark-master:7077 
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0
       /app/spark_sports_producer.py"
-  
+
+
   kafka-matchs-producer:
-    image: bde2020/spark-worker:3.3.0-hadoop3.3
+    build:
+      context: .
+      dockerfile: Dockerfile-matchs-producer
     container_name: kafka-matchs-producer
     depends_on:
       - spark-master
       - kafka
     volumes:
       - ./app:/app
+    environment:
+      - FOOTBALL_API_KEY=${FOOTBALL_API_KEY}
     command: >
-      bash -c "pip install kafka-python && 
+      bash -c "pip install kafka-python requests && 
       /spark/bin/spark-submit --master spark://spark-master:7077 
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0
       /app/spark_matchs_producer.py"
-  
+
+
   kafka-users-producer:
     image: bde2020/spark-worker:3.3.0-hadoop3.3
     container_name: kafka-users-producer
@@ -167,7 +173,7 @@ services:
       /spark/bin/spark-submit --master spark://spark-master:7077 
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0
       /app/spark_users_producer.py"
-  
+
   kafka-notifications-producer:
     image: bde2020/spark-worker:3.3.0-hadoop3.3
     container_name: kafka-notifications-producer
@@ -249,4 +255,3 @@ volumes:
   namenode:
   datanode:
   airflow_db_volume:
-

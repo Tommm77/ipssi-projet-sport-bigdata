@@ -1,0 +1,10 @@
+FROM bde2020/spark-worker:3.3.0-hadoop3.3
+
+# Installation des dépendances système et Python pour Alpine
+USER root
+RUN apk update && \
+    apk add --no-cache py3-pip && \
+    pip3 install --no-cache-dir kafka-python requests
+
+WORKDIR /app
+CMD ["/bin/bash"]
