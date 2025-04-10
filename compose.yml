@@ -176,6 +176,9 @@ services:
   kafka-notifications-producer:
     image: bde2020/spark-worker:3.3.0-hadoop3.3
     container_name: kafka-notifications-producer
+    # This service is disabled to allow the football_notifications_dag in Airflow
+    # to be the sole producer of notifications
+    profiles: ["disabled"]
     depends_on:
       - spark-master
       - kafka

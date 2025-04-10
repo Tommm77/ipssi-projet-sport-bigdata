@@ -27,9 +27,9 @@ const Header = ({ toggleDrawer, open }) => {
           Sport Dashboard - Big Data
         </Typography>
         <IconButton color="inherit">
-          <Badge badgeContent={4} color="error">
+          {/* <Badge badgeContent={4} color="error">
             <NotificationsIcon />
-          </Badge>
+          </Badge> */}
         </IconButton>
         <IconButton color="inherit">
           <AccountCircleIcon />
