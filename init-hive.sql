@@ -1,8 +1,6 @@
--- Création de la base de données
 CREATE DATABASE IF NOT EXISTS kafka_data;
 USE kafka_data;
 
--- Table pour les sports
 CREATE EXTERNAL TABLE IF NOT EXISTS sports (
   sport_id INT,
   nom STRING,
@@ -14,7 +12,6 @@ ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/sports';
 
--- Table pour les matchs
 CREATE EXTERNAL TABLE IF NOT EXISTS matchs (
   match_id INT,
   sport_id INT,
@@ -32,7 +29,6 @@ ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/matchs';
 
--- Table pour les utilisateurs
 CREATE EXTERNAL TABLE IF NOT EXISTS users (
   user_id INT,
   prenom STRING,
@@ -46,7 +42,6 @@ ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/users';
 
--- Table pour les notifications
 CREATE EXTERNAL TABLE IF NOT EXISTS notifications (
   notification_id INT,
   user_id INT,
@@ -60,10 +55,8 @@ ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/kafka_data.db/notifications';
 
--- Désactiver les vérifications de produits cartésiens pour les vues
 SET hive.strict.checks.cartesian.product=false;
 
--- Vue pour les statistiques de matchs par sport et statut
 CREATE VIEW IF NOT EXISTS stats_matchs AS 
 SELECT 
   sport_id, 
@@ -75,7 +68,6 @@ SELECT
 FROM matchs 
 GROUP BY sport_id, sport_nom, statut;
 
--- Vue pour les statistiques globales par sport
 CREATE VIEW IF NOT EXISTS stats_sportifs AS 
 SELECT 
   m.sport_id, 
@@ -87,7 +79,6 @@ SELECT
 FROM matchs m 
 GROUP BY m.sport_id, m.sport_nom;
 
--- Vue pour les statistiques des équipes à domicile
 CREATE VIEW IF NOT EXISTS stats_equipes_domicile AS 
 SELECT 
   m.sport_id, 
@@ -99,7 +90,6 @@ SELECT
 FROM matchs m 
 GROUP BY m.sport_id, m.sport_nom, m.equipe_domicile;
 
--- Vue pour les statistiques des équipes à l'extérieur
 CREATE VIEW IF NOT EXISTS stats_equipes_exterieur AS 
 SELECT 
   m.sport_id, 
@@ -109,9 +99,8 @@ SELECT
   SUM(m.score_exterieur) as buts_marques, 
   SUM(m.score_domicile) as buts_encaisses 
 FROM matchs m 
-GROUP BY m.sport_id, m.sport_nom, m.equipe_exterieur;
+GROUP BY m.sport_id, m.sport_nom, m.equipe_exterieur; 
 
--- Vue pour les statistiques des notifications
 CREATE VIEW IF NOT EXISTS stats_notifications AS 
 SELECT 
   n.type, 
@@ -121,7 +110,6 @@ SELECT
 FROM notifications n 
 GROUP BY n.type;
 
--- Vue combinant stats domicile et extérieur (vue bonus avancée)
 CREATE VIEW IF NOT EXISTS stats_equipes_completes AS
 SELECT 
   d.sport_id,
