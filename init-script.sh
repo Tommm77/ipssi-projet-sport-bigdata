@@ -11,8 +11,37 @@ check_port() {
     return $?
 }
 
-# Définir explicitement l'adresse du namenode
+# Définir explicitement l'adresse du namenode et forcer sa configuration
 export HADOOP_NAMENODE="namenode"
+# Forcer les configurations Hadoop pour utiliser le namenode correct
+export HADOOP_OPTS="-Dfs.defaultFS=hdfs://${HADOOP_NAMENODE}:8020 $HADOOP_OPTS"
+export HADOOP_CLIENT_OPTS="-Dfs.defaultFS=hdfs://${HADOOP_NAMENODE}:8020 $HADOOP_CLIENT_OPTS"
+
+# Configurer Hadoop pour utiliser le namenode correct dès le départ
+export HADOOP_CONF_DIR=/opt/hadoop-2.7.4/etc/hadoop
+echo "Configuring Hadoop to use namenode explicitly at ${HADOOP_NAMENODE}:8020"
+cat > $HADOOP_CONF_DIR/core-site.xml << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://${HADOOP_NAMENODE}:8020</value>
+    </property>
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/tmp/hadoop-\${user.name}</value>
+    </property>
+</configuration>
+EOF
+
+# Ajouter le namenode au fichier hosts pour être sûr
+HOST_IP=$(getent hosts ${HADOOP_NAMENODE} | awk '{ print $1 }')
+if [ -n "$HOST_IP" ]; then
+    echo "Adding namenode entry to /etc/hosts: $HOST_IP ${HADOOP_NAMENODE}"
+    echo "$HOST_IP ${HADOOP_NAMENODE}" >> /etc/hosts
+fi
+
 echo "Configuring core"
 echo " - Setting fs.defaultFS=hdfs://${HADOOP_NAMENODE}:8020"
 echo "Configuring hdfs"
@@ -78,20 +107,6 @@ while ! check_port hive-server 10000 1; do
 done
 
 echo "Hive Server est disponible!"
-
-# Configurer Hadoop pour utiliser le namenode correct
-export HADOOP_CONF_DIR=/opt/hadoop-2.7.4/etc/hadoop
-echo "Reconfiguring Hadoop to use namenode explicitly"
-cat > $HADOOP_CONF_DIR/core-site.xml << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-<configuration>
-    <property>
-        <name>fs.defaultFS</name>
-        <value>hdfs://${HADOOP_NAMENODE}:8020</value>
-    </property>
-</configuration>
-EOF
 
 # Créer les répertoires nécessaires dans HDFS en utilisant l'adresse explicite
 echo "Configuration des répertoires HDFS..."
