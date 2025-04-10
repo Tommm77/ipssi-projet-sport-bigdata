@@ -53,7 +53,7 @@ L'application est divisée en plusieurs composants interconnectés:
 ### Prérequis
 - Docker et Docker Compose
 - Git
-- Au moins 8 Go de RAM disponible
+- Au moins 12 Go de RAM disponible
 - Connexion Internet (pour télécharger les images Docker)
 
 ### Étapes d'Installation
