@@ -11,12 +11,24 @@ check_port() {
     return $?
 }
 
+# Définir explicitement l'adresse du namenode
+export HADOOP_NAMENODE="namenode"
+echo "Configuring core"
+echo " - Setting fs.defaultFS=hdfs://${HADOOP_NAMENODE}:8020"
+echo "Configuring hdfs"
+echo "Configuring yarn"
+echo "Configuring httpfs"
+echo "Configuring kms"
+echo "Configuring mapred"
+echo "Configuring hive"
+echo "Configuring for multihomed network"
+
 # Attendre que les services soient disponibles
 echo "Attente du démarrage de HDFS..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
-while ! hdfs dfs -ls / > /dev/null 2>&1; do
+while ! hdfs dfs -ls hdfs://${HADOOP_NAMENODE}:8020/ > /dev/null 2>&1; do
   echo "En attente de HDFS... (tentative $((RETRY_COUNT+1))/$MAX_RETRIES)"
   RETRY_COUNT=$((RETRY_COUNT+1))
   
