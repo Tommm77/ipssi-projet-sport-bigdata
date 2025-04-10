@@ -76,12 +76,6 @@ echo "FOOTBALL_API_KEY=votre_clé_api" > .env
 docker-compose up -d
 ```
 
-#### 4. Initialisation du Système
-```bash
-# Exécuter le script d'initialisation
-./init-script.sh
-```
-
 Ce script effectue les actions suivantes:
 1. Configure Hadoop pour utiliser le namenode correct
 2. Attend que les services HDFS, Hive Metastore et Hive Server soient disponibles
