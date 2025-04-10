@@ -1,4 +1,4 @@
-# Application de Gestion de Données Sportives
+# Application de Gestion de Données Sportives (Par Tom PICOUT, Mathieu FROIDURE et Antoine AVENIA)
 
 ## 1. Description du Projet
 
