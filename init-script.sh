@@ -79,19 +79,33 @@ done
 
 echo "Hive Server est disponible!"
 
-# Créer les répertoires nécessaires dans HDFS
+# Configurer Hadoop pour utiliser le namenode correct
+export HADOOP_CONF_DIR=/opt/hadoop-2.7.4/etc/hadoop
+echo "Reconfiguring Hadoop to use namenode explicitly"
+cat > $HADOOP_CONF_DIR/core-site.xml << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://${HADOOP_NAMENODE}:8020</value>
+    </property>
+</configuration>
+EOF
+
+# Créer les répertoires nécessaires dans HDFS en utilisant l'adresse explicite
 echo "Configuration des répertoires HDFS..."
-hdfs dfs -mkdir -p /tmp || echo "Le répertoire /tmp existe déjà"
-hdfs dfs -mkdir -p /user/hive/warehouse || echo "Le répertoire /user/hive/warehouse existe déjà"
-hdfs dfs -mkdir -p /user/hive/warehouse/kafka_data.db/sports || echo "Le répertoire sports existe déjà"
-hdfs dfs -mkdir -p /user/hive/warehouse/kafka_data.db/matchs || echo "Le répertoire matchs existe déjà"
-hdfs dfs -mkdir -p /user/hive/warehouse/kafka_data.db/users || echo "Le répertoire users existe déjà"
-hdfs dfs -mkdir -p /user/hive/warehouse/kafka_data.db/notifications || echo "Le répertoire notifications existe déjà"
+hdfs dfs -mkdir -p hdfs://${HADOOP_NAMENODE}:8020/tmp || echo "Le répertoire /tmp existe déjà"
+hdfs dfs -mkdir -p hdfs://${HADOOP_NAMENODE}:8020/user/hive/warehouse || echo "Le répertoire /user/hive/warehouse existe déjà"
+hdfs dfs -mkdir -p hdfs://${HADOOP_NAMENODE}:8020/user/hive/warehouse/kafka_data.db/sports || echo "Le répertoire sports existe déjà"
+hdfs dfs -mkdir -p hdfs://${HADOOP_NAMENODE}:8020/user/hive/warehouse/kafka_data.db/matchs || echo "Le répertoire matchs existe déjà"
+hdfs dfs -mkdir -p hdfs://${HADOOP_NAMENODE}:8020/user/hive/warehouse/kafka_data.db/users || echo "Le répertoire users existe déjà"
+hdfs dfs -mkdir -p hdfs://${HADOOP_NAMENODE}:8020/user/hive/warehouse/kafka_data.db/notifications || echo "Le répertoire notifications existe déjà"
 
 # Définir les permissions appropriées
 echo "Configuration des permissions HDFS..."
-hdfs dfs -chmod -R 777 /tmp
-hdfs dfs -chmod -R 777 /user/hive/warehouse
+hdfs dfs -chmod -R 777 hdfs://${HADOOP_NAMENODE}:8020/tmp
+hdfs dfs -chmod -R 777 hdfs://${HADOOP_NAMENODE}:8020/user/hive/warehouse
 
 # Exécuter le script SQL pour créer les tables Hive
 echo "Initialisation des tables Hive..."
