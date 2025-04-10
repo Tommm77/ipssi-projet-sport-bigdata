@@ -17,12 +17,13 @@ L'application est divisée en plusieurs composants interconnectés:
   - Notifications (alertes de matchs, résultats)
 - **Apache Kafka** : Sert de couche de messaging pour toutes les données en temps réel
 - **Apache NiFi** : Effectue des appels API périodiques vers des services externes et transmet les données récupérées à Kafka
+- **Apache Airflow** : Génère des notifications périodiques pour les événements sportifs et les envoie vers Kafka
 
 #### 2. Stockage et Traitement
 - **HDFS** : Stockage distribué pour les données persistantes
 - **Apache Hive** : Entrepôt de données pour le stockage structuré et les requêtes SQL
 - **Apache Spark** : Traitement des flux de données en temps réel et analyses complexes
-- **Apache Airflow** : Orchestration des tâches et workflows (notamment pour les notifications)
+- **Apache Airflow** : Orchestration des tâches et workflows
 
 #### 3. Interface Utilisateur
 - **Frontend React** : Interface web pour les utilisateurs finaux
@@ -30,15 +31,16 @@ L'application est divisée en plusieurs composants interconnectés:
 - **Apache Superset** : Tableau de bord pour la visualisation et l'analyse des données
 
 ### Flux de Données
-1. Les producteurs génèrent des données (sports, matchs, utilisateurs, notifications)
+1. Les producteurs génèrent des données (sports, matchs, utilisateurs)
 2. NiFi effectue des appels API périodiques et transmet les données à Kafka
-3. Ces données sont publiées sur des topics Kafka
-4. Spark consomme les flux Kafka et effectue des transformations
-5. Les données transformées sont stockées dans Hive sur HDFS
-6. Le backend consomme directement les données de Kafka et les expose via une API REST
-7. Le frontend affiche les données aux utilisateurs finaux
-8. Airflow orchestre des tâches périodiques comme la génération de notifications
-9. Superset interroge Hive pour l'analyse avancée et la visualisation des données
+3. Airflow génère des notifications et les publie sur le topic Kafka dédié
+4. Ces données sont publiées sur des topics Kafka
+5. Spark consomme les flux Kafka et effectue des transformations
+6. Les données transformées sont stockées dans Hive sur HDFS
+7. Le backend consomme directement les données de Kafka et les expose via une API REST
+8. Le frontend affiche les données aux utilisateurs finaux
+9. Airflow orchestre des tâches périodiques pour le pipeline de données
+10. Superset interroge Hive pour l'analyse avancée et la visualisation des données
 
 ### Fonctionnalités Clés
 - Suivi en temps réel des matchs sportifs
@@ -100,6 +102,7 @@ Une fois le système démarré, les processus suivants sont en action:
 1. **Ingestion de données**:
    - NiFi effectue des appels API périodiques et transmet les données à Kafka
    - Les producteurs Kafka génèrent et envoient des données vers leurs topics respectifs
+   - Airflow génère des notifications de matchs de football et les envoie vers Kafka
    - Le service kafka-to-hive transfère les données des topics Kafka vers Hive
 
 2. **Traitement**:
